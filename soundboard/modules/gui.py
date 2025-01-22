@@ -1,38 +1,109 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QGridLayout, QPushButton, QWidget
-from PyQt5.QtCore import Qt
-import sys
+import pygame
 import logging
+import os
+os.environ['SDL_VIDEODRIVER'] = 'fbcon'  # Für direkten Framebuffer-Zugriff
 
-class SoundboardGUI(QMainWindow):
+class SoundboardGUI:
     def __init__(self, button_callback):
-        # Stelle sicher, dass QApplication existiert
-        if not QApplication.instance():
-            raise RuntimeError("QApplication muss vor SoundboardGUI erstellt werden")
-        
-        super().__init__()
-        self.button_callback = button_callback
-        self.init_ui()
+        """Initialisiert die Pygame-basierte GUI"""
+        try:
+            pygame.init()
+            pygame.display.init()
+            
+            # Bildschirmgröße ermitteln
+            info = pygame.display.Info()
+            self.width = info.current_w
+            self.height = info.current_h
+            
+            # Vollbild-Modus
+            self.screen = pygame.display.set_mode((self.width, self.height))
+            pygame.display.set_caption('Soundboard')
+            
+            # Farben definieren
+            self.BLACK = (0, 0, 0)
+            self.WHITE = (255, 255, 255)
+            self.GRAY = (128, 128, 128)
+            
+            # Button-Grid erstellen
+            self.buttons = self._create_buttons()
+            self.callback = button_callback
+            
+            logging.info("GUI erfolgreich initialisiert")
+            
+        except Exception as e:
+            logging.error(f"Fehler bei GUI-Initialisierung: {e}")
+            raise
 
-    def init_ui(self):
-        """Initialisiert die Benutzeroberfläche"""
-        self.setWindowTitle('Soundboard')
-        self.setGeometry(0, 0, 800, 480)  # Für 10-Zoll Display
+    def _create_buttons(self):
+        """Erstellt das 4x4 Button-Grid"""
+        buttons = []
+        margin = 10
+        cols, rows = 4, 4
         
-        # Erstelle zentrales Widget und Layout
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        grid = QGridLayout(central_widget)
+        # Buttongrößen berechnen
+        button_width = (self.width - (cols + 1) * margin) // cols
+        button_height = (self.height - (rows + 1) * margin) // rows
         
-        # Erstelle 4x4 Grid mit Buttons
-        for row in range(4):
-            for col in range(4):
-                button_id = row * 4 + col
-                button = QPushButton(f'Button {button_id}')
-                button.setMinimumSize(180, 100)
-                button.clicked.connect(lambda checked, x=button_id: self.button_callback(x))
-                grid.addWidget(button, row, col)
+        for row in range(rows):
+            for col in range(cols):
+                x = margin + col * (button_width + margin)
+                y = margin + row * (button_height + margin)
+                button_id = row * cols + col
+                
+                button = {
+                    'rect': pygame.Rect(x, y, button_width, button_height),
+                    'id': button_id,
+                    'text': f'Button {button_id}',
+                    'pressed': False
+                }
+                buttons.append(button)
+                
+        return buttons
 
-    def show(self):
-        """Überschreibt die show()-Methode"""
-        # Vollbildmodus aktivieren
-        self.showFullScreen() 
+    def run(self):
+        """Hauptschleife der GUI"""
+        running = True
+        clock = pygame.time.Clock()
+        
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    self._handle_click(event.pos)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+            
+            self._draw()
+            clock.tick(30)
+            
+        pygame.quit()
+
+    def _handle_click(self, pos):
+        """Verarbeitet Mausklicks/Touchscreen-Events"""
+        for button in self.buttons:
+            if button['rect'].collidepoint(pos):
+                button['pressed'] = True
+                self.callback(button['id'])
+                # Visual feedback
+                self._draw()
+                pygame.time.wait(100)
+                button['pressed'] = False
+                break
+
+    def _draw(self):
+        """Zeichnet die Benutzeroberfläche"""
+        self.screen.fill(self.BLACK)
+        
+        for button in self.buttons:
+            color = self.GRAY if button['pressed'] else self.WHITE
+            pygame.draw.rect(self.screen, color, button['rect'])
+            
+            # Text rendern
+            font = pygame.font.Font(None, 36)
+            text = font.render(button['text'], True, self.BLACK)
+            text_rect = text.get_rect(center=button['rect'].center)
+            self.screen.blit(text, text_rect)
+        
+        pygame.display.flip() 

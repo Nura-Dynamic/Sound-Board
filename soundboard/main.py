@@ -3,7 +3,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from PyQt5.QtWidgets import QApplication
 from modules.gui import SoundboardGUI
 from modules.audio import AudioPlayer
 from modules.gpio_handler import GPIOHandler
@@ -73,12 +72,10 @@ class Soundboard:
             raise
 
 def main():
-    # Erstelle QApplication vor allem anderen
-    app = QApplication(sys.argv)
-    
     try:
         soundboard = Soundboard()
-        return soundboard.run()
+        soundboard.gui.run()
+        return 0
     except Exception as e:
         logging.error(f"Fataler Fehler: {e}")
         return 1
