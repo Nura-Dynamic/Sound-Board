@@ -2,6 +2,65 @@
 
 Ein konfigurierbares Soundboard für den Raspberry Pi mit 10-Zoll Touchscreen und GPIO-Tasten.
 
+## Systemanforderungen
+
+- Raspberry Pi 5
+- Raspberry Pi OS Lite (empfohlen) oder Ubuntu Server
+- 10-Zoll Touchscreen
+- GPIO-Tasten (optional)
+
+## Vorbereitungen
+
+### 1. Raspberry Pi OS Lite Installation
+
+```bash
+# Nach der Installation von Raspberry Pi OS Lite:
+
+# X-Server und minimale Desktop-Umgebung
+sudo apt-get install -y \
+    xserver-xorg \
+    x11-xserver-utils \
+    xinit \
+    openbox \
+    lightdm
+
+# Audio-Optimierungen
+sudo nano /boot/config.txt
+```
+
+Fügen Sie folgende Zeilen zu config.txt hinzu:
+```
+# Audio-Optimierungen
+dtparam=audio=on
+audio_pwm_mode=2
+
+# CPU-Optimierungen
+force_turbo=1
+
+# GPU-Speicher für Touchscreen
+gpu_mem=128
+```
+
+### 2. Audio-Konfiguration
+
+```bash
+# ALSA und PulseAudio Installation
+sudo apt-get install -y \
+    alsa-utils \
+    pulseaudio \
+    pulseaudio-utils
+
+# Realtime-Priorität für Audio
+sudo adduser $USER audio
+sudo nano /etc/security/limits.d/audio.conf
+```
+
+Fügen Sie folgende Zeilen zu audio.conf hinzu:
+```
+@audio   -  rtprio     95
+@audio   -  memlock    unlimited
+```
+
 ## Features
 
 - 4x4 Touch-Button-Grid für Soundeffekte und Befehle
@@ -21,6 +80,8 @@ sudo apt-get install -y \
     python3-pyqt5 \
     python3-gpiozero \
     python3-pygame \
+    python3-alsaaudio \
+    python3-rtmidi \
     git
 ```
 
@@ -114,15 +175,6 @@ Die `config.json` Datei enthält alle Einstellungen:
     }
 }
 ```
-
-## Anforderungen
-
-- Raspberry Pi 5
-- 10-Zoll Touchscreen
-- Raspberry Pi OS
-- Python 3.7+
-- PyQt5
-- GPIO-Tasten (optional)
 
 ## Fehlersuche
 
