@@ -5,8 +5,10 @@ from pathlib import Path
 class ConfigManager:
     DEFAULT_CONFIG = {
         "buttons": {
-            "0": "sound1.wav",
-            "1": "sound2.wav"
+            "0": {"text": "Sound 1", "action": "sound1.wav", "color": [255, 255, 255]},
+            "1": {"text": "Sound 2", "action": "sound2.wav", "color": [200, 200, 255]},
+            "2": {"text": "Play", "action": "play_pause", "color": [200, 255, 200]},
+            "3": {"text": "Stop", "action": "stop", "color": [255, 200, 200]}
         },
         "gpio_pins": [17, 27],
         "gpio_actions": {
@@ -16,6 +18,12 @@ class ConfigManager:
         "audio_settings": {
             "output_device": "default",
             "volume": 1.0
+        },
+        "gui_settings": {
+            "background_color": [0, 0, 0],
+            "button_margin": 20,
+            "font_size": 48,
+            "feedback_color": [0, 0, 255]
         }
     }
 

@@ -1,28 +1,36 @@
 import pygame
 import logging
 import os
-os.environ['SDL_VIDEODRIVER'] = 'fbcon'  # Für direkten Framebuffer-Zugriff
+
+# Setze Display-Umgebungsvariablen
+if not os.getenv('DISPLAY'):
+    os.environ['SDL_VIDEODRIVER'] = 'fbcon'
+    os.environ['SDL_FBDEV'] = '/dev/fb0'
+    os.environ['SDL_NOMOUSE'] = '1'  # Deaktiviere Maus-Cursor
 
 class SoundboardGUI:
-    def __init__(self, button_callback):
+    def __init__(self, button_callback, config):
         """Initialisiert die Pygame-basierte GUI"""
         try:
             pygame.init()
+            # Initialisiere nur das Display-Modul
             pygame.display.init()
+            pygame.font.init()
             
+            self.config = config
             # Bildschirmgröße ermitteln
             info = pygame.display.Info()
             self.width = info.current_w
             self.height = info.current_h
             
             # Vollbild-Modus
-            self.screen = pygame.display.set_mode((self.width, self.height))
+            self.screen = pygame.display.set_mode((self.width, self.height), pygame.FULLSCREEN | pygame.NOFRAME)
             pygame.display.set_caption('Soundboard')
+            pygame.mouse.set_visible(False)  # Verstecke Maus-Cursor
             
-            # Farben definieren
-            self.BLACK = (0, 0, 0)
-            self.WHITE = (255, 255, 255)
-            self.GRAY = (128, 128, 128)
+            # Farben aus Konfiguration laden
+            self.background_color = tuple(self.config['gui_settings']['background_color'])
+            self.feedback_color = tuple(self.config['gui_settings']['feedback_color'])
             
             # Button-Grid erstellen
             self.buttons = self._create_buttons()
@@ -37,7 +45,7 @@ class SoundboardGUI:
     def _create_buttons(self):
         """Erstellt das 4x4 Button-Grid"""
         buttons = []
-        margin = 10
+        margin = self.config['gui_settings']['button_margin']
         cols, rows = 4, 4
         
         # Buttongrößen berechnen
@@ -48,13 +56,21 @@ class SoundboardGUI:
             for col in range(cols):
                 x = margin + col * (button_width + margin)
                 y = margin + row * (button_height + margin)
-                button_id = row * cols + col
+                button_id = str(row * cols + col)
+                
+                # Button-Konfiguration aus config laden
+                button_config = self.config['buttons'].get(button_id, {
+                    "text": f"Button {button_id}",
+                    "color": [255, 255, 255]
+                })
                 
                 button = {
                     'rect': pygame.Rect(x, y, button_width, button_height),
                     'id': button_id,
-                    'text': f'Button {button_id}',
-                    'pressed': False
+                    'text': button_config['text'],
+                    'pressed': False,
+                    'color': tuple(button_config['color']),
+                    'original_color': tuple(button_config['color'])
                 }
                 buttons.append(button)
                 
@@ -76,7 +92,7 @@ class SoundboardGUI:
                         running = False
             
             self._draw()
-            clock.tick(30)
+            clock.tick(60)  # Höhere Framerate für bessere Reaktionszeit
             
         pygame.quit()
 
@@ -85,24 +101,27 @@ class SoundboardGUI:
         for button in self.buttons:
             if button['rect'].collidepoint(pos):
                 button['pressed'] = True
+                button['color'] = self.feedback_color
                 self.callback(button['id'])
                 # Visual feedback
                 self._draw()
                 pygame.time.wait(100)
                 button['pressed'] = False
+                button['color'] = button['original_color']
                 break
 
     def _draw(self):
         """Zeichnet die Benutzeroberfläche"""
-        self.screen.fill(self.BLACK)
+        self.screen.fill(self.background_color)
         
         for button in self.buttons:
-            color = self.GRAY if button['pressed'] else self.WHITE
+            color = self.feedback_color if button['pressed'] else button['color']
             pygame.draw.rect(self.screen, color, button['rect'])
+            pygame.draw.rect(self.screen, self.background_color, button['rect'], 2)  # Rahmen
             
             # Text rendern
-            font = pygame.font.Font(None, 36)
-            text = font.render(button['text'], True, self.BLACK)
+            font = pygame.font.Font(None, self.config['gui_settings']['font_size'])
+            text = font.render(button['text'], True, self.background_color)
             text_rect = text.get_rect(center=button['rect'].center)
             self.screen.blit(text, text_rect)
         

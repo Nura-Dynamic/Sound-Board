@@ -20,7 +20,7 @@ class Soundboard:
         self.config = self.config_manager.load_config()
         
         # GUI als letztes initialisieren
-        self.gui = SoundboardGUI(self._handle_button_press)
+        self.gui = SoundboardGUI(self._handle_button_press, self.config)
         
         # Andere Module nach GUI initialisieren
         self.audio_player = AudioPlayer(self.config['audio_settings'])
