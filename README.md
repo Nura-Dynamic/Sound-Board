@@ -77,17 +77,14 @@ Fügen Sie folgende Zeilen zu audio.conf hinzu:
 sudo apt-get update
 sudo apt-get install -y \
     python3-pip \
-    python3-pyqt5 \
-    python3-gpiozero \
-    python3-pygame \
-    python3-alsaaudio \
-    python3-rtmidi \
     python3-venv \
     python3-full \
-    python3-rpi.gpio \
+    python3-pygame \
+    python3-gpiozero \
+    python3-usb \
+    python3-dotenv \
     python3-setuptools \
-    python3-wheel \
-    git
+    python3-wheel
 ```
 
 ### 2. Repository klonen
@@ -97,34 +94,17 @@ git clone https://github.com/Nura-Dynamic/Sound-Board.git
 cd Sound-Board
 ```
 
-### 3. Virtuelle Umgebung erstellen und aktivieren
+### 3. Virtuelle Umgebung erstellen
 
 ```bash
-# Virtuelle Umgebung erstellen
-python3 -m venv venv
+# Virtuelle Umgebung mit Zugriff auf System-Pakete erstellen
+python3 -m venv venv --system-site-packages
 
 # Virtuelle Umgebung aktivieren
 source venv/bin/activate
-
-# Pip upgraden
-pip install --upgrade pip
-
-# Abhängigkeiten installieren
-pip install -r requirements.txt
 ```
 
-### 4. Systemweite Python-Pakete verknüpfen
-
-```bash
-# Python-Version ermitteln und .pth Datei erstellen
-PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-echo "/usr/lib/python3/dist-packages" > venv/lib/python${PYTHON_VERSION}/site-packages/system.pth
-
-# Überprüfen der Installation
-python3 -c "import PyQt5; import gpiozero; import pygame; print('Alle System-Pakete erfolgreich geladen!')"
-```
-
-### 5. Berechtigungen einrichten
+### 4. Berechtigungen einrichten
 
 ```bash
 # Für USB-HID Zugriff
@@ -134,7 +114,7 @@ sudo usermod -a -G plugdev $USER
 sudo usermod -a -G audio $USER
 ```
 
-### 6. Konfigurationsdatei anpassen:
+### 5. Konfigurationsdatei anpassen:
 - Öffnen Sie `config.json` und passen Sie die Einstellungen an
 - Legen Sie Ihre Sounddateien im Ordner `sounds/` ab
 
