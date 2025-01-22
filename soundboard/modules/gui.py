@@ -29,17 +29,4 @@ class SoundboardGUI(QMainWindow):
                 grid.addWidget(button, row, col)
         
         # Vollbildmodus aktivieren
-        self.showFullScreen()
-
-    def run(self):
-        """Startet die GUI-Anwendung"""
-        try:
-            if not QApplication.instance():
-                app = QApplication(sys.argv)
-            else:
-                app = QApplication.instance()
-            self.show()
-            return app.exec_()
-        except Exception as e:
-            logging.error(f"Fehler beim Starten der GUI: {e}")
-            raise 
+        self.showFullScreen() 
