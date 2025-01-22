@@ -13,23 +13,23 @@ import sys
 
 class Soundboard:
     def __init__(self):
+        # Logging zuerst einrichten
+        self._setup_logging()
+        
         # QApplication muss vor allen anderen Qt-Widgets erstellt werden
         self.app = QApplication(sys.argv)
-        
-        # Logging einrichten
-        self._setup_logging()
         
         # Konfiguration laden
         self.config_manager = ConfigManager()
         self.config = self.config_manager.load_config()
         
-        # Module initialisieren
+        # GUI als letztes initialisieren
+        self.gui = SoundboardGUI(self._handle_button_press)
+        
+        # Andere Module nach GUI initialisieren
         self.audio_player = AudioPlayer(self.config['audio_settings'])
         self.gpio_handler = GPIOHandler(self.config['gpio_pins'], self._handle_gpio_event)
         self.hid_comm = HIDCommunication()
-        
-        # GUI als letztes initialisieren
-        self.gui = SoundboardGUI(self._handle_button_press)
         
     def _setup_logging(self):
         log_dir = Path('logs')
