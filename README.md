@@ -88,8 +88,8 @@ sudo apt-get install -y \
 ### 2. Repository klonen
 
 ```bash
-git clone https://github.com/Nura-Dynamic/raspberry-soundboard.git
-cd raspberry-soundboard
+git clone https://github.com/Nura-Dynamic/Sound-Board.git
+cd Sound-Board.git
 ```
 
 ### 3. Python-Abhängigkeiten installieren
