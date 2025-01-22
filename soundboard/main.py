@@ -11,13 +11,13 @@ from modules.hid_communication import HIDCommunication
 from modules.config_manager import ConfigManager
 import sys
 
+# QApplication muss global vor allem anderen erstellt werden
+app = QApplication(sys.argv)
+
 class Soundboard:
     def __init__(self):
         # Logging zuerst einrichten
         self._setup_logging()
-        
-        # QApplication muss vor allen anderen Qt-Widgets erstellt werden
-        self.app = QApplication(sys.argv)
         
         # Konfiguration laden
         self.config_manager = ConfigManager()
@@ -70,11 +70,14 @@ class Soundboard:
         try:
             logging.info("Soundboard wird gestartet...")
             self.gui.show()
-            return self.app.exec_()
+            return app.exec_()
         except Exception as e:
             logging.error(f"Kritischer Fehler: {e}")
             raise
 
 if __name__ == "__main__":
+    # Stelle sicher, dass die QApplication existiert
+    if not QApplication.instance():
+        app = QApplication(sys.argv)
     soundboard = Soundboard()
     sys.exit(soundboard.run()) 

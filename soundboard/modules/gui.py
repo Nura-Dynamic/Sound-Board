@@ -7,7 +7,8 @@ class SoundboardGUI(QMainWindow):
     def __init__(self, button_callback):
         super().__init__()
         self.button_callback = button_callback
-        self.init_ui()
+        # Verzögere die UI-Initialisierung
+        self.initialized = False
 
     def init_ui(self):
         """Initialisiert die Benutzeroberfläche"""
@@ -28,5 +29,11 @@ class SoundboardGUI(QMainWindow):
                 button.clicked.connect(lambda checked, x=button_id: self.button_callback(x))
                 grid.addWidget(button, row, col)
         
+        self.initialized = True
+
+    def show(self):
+        """Überschreibt die show()-Methode"""
+        if not self.initialized:
+            self.init_ui()
         # Vollbildmodus aktivieren
         self.showFullScreen() 
