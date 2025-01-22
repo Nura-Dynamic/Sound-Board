@@ -2,11 +2,7 @@ import pygame
 import logging
 import os
 
-# Setze Display-Umgebungsvariablen
-if not os.getenv('DISPLAY'):
-    os.environ['SDL_VIDEODRIVER'] = 'fbcon'
-    os.environ['SDL_FBDEV'] = '/dev/fb0'
-    os.environ['SDL_NOMOUSE'] = '1'  # Deaktiviere Maus-Cursor
+# X11-Display wird automatisch erkannt
 
 class SoundboardGUI:
     def __init__(self, button_callback, config):
@@ -20,13 +16,17 @@ class SoundboardGUI:
             self.config = config
             # Bildschirmgröße ermitteln
             info = pygame.display.Info()
+            # Verwende volle Bildschirmgröße für Touchscreen
             self.width = info.current_w
             self.height = info.current_h
             
-            # Vollbild-Modus
+            # Vollbild-Modus für Touchscreen
             self.screen = pygame.display.set_mode((self.width, self.height), pygame.FULLSCREEN | pygame.NOFRAME)
             pygame.display.set_caption('Soundboard')
-            pygame.mouse.set_visible(False)  # Verstecke Maus-Cursor
+            pygame.mouse.set_visible(False)  # Verstecke Maus-Cursor für Touch
+            
+            # Touch-Optimierungen
+            pygame.event.set_allowed([pygame.QUIT, pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN])
             
             # Farben aus Konfiguration laden
             self.background_color = tuple(self.config['gui_settings']['background_color'])
@@ -90,6 +90,10 @@ class SoundboardGUI:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         running = False
+                    # Numpad für direkte Button-Auswahl
+                    elif event.key in range(pygame.K_KP0, pygame.K_KP9 + 1):
+                        button_id = str(event.key - pygame.K_KP0)
+                        self._trigger_button(button_id)
             
             self._draw()
             clock.tick(60)  # Höhere Framerate für bessere Reaktionszeit
@@ -125,4 +129,17 @@ class SoundboardGUI:
             text_rect = text.get_rect(center=button['rect'].center)
             self.screen.blit(text, text_rect)
         
-        pygame.display.flip() 
+        pygame.display.flip()
+
+    def _trigger_button(self, button_id):
+        """Löst einen Button programmatisch aus"""
+        for button in self.buttons:
+            if button['id'] == button_id:
+                button['pressed'] = True
+                button['color'] = self.feedback_color
+                self.callback(button['id'])
+                self._draw()
+                pygame.time.wait(100)
+                button['pressed'] = False
+                button['color'] = button['original_color']
+                break 

@@ -5,25 +5,15 @@ Ein konfigurierbares Soundboard für den Raspberry Pi mit 10-Zoll Touchscreen un
 ## Systemanforderungen
 
 - Raspberry Pi 5
-- Raspberry Pi OS Lite (empfohlen) oder Ubuntu Server
+- Raspberry Pi OS mit Desktop
 - 10-Zoll Touchscreen
 - GPIO-Tasten (optional)
 
 ## Vorbereitungen
 
-### 1. Raspberry Pi OS Lite Installation
+### 1. Raspberry Pi OS Installation
 
 ```bash
-# Nach der Installation von Raspberry Pi OS Lite:
-
-# X-Server und minimale Desktop-Umgebung
-sudo apt-get install -y \
-    xserver-xorg \
-    x11-xserver-utils \
-    xinit \
-    openbox \
-    lightdm
-
 # Audio-Optimierungen
 sudo nano /boot/firmware/config.txt
 ```
@@ -152,16 +142,31 @@ python3 main.py
 
 ### Automatischer Start beim Systemstart
 
-Fügen Sie folgenden Eintrag zu `/etc/rc.local` hinzu (vor `exit 0`):
+Erstellen Sie einen Autostart-Eintrag:
 
 ```bash
-su pi -c 'cd /home/pi/raspberry-soundboard && source venv/bin/activate && python3 main.py &'
+# Erstelle Autostart-Verzeichnis
+mkdir -p ~/.config/autostart
+
+# Erstelle Desktop-Eintrag
+cat > ~/.config/autostart/soundboard.desktop << EOL
+[Desktop Entry]
+Type=Application
+Name=Soundboard
+Exec=bash -c 'cd /home/pi/Sound-Board && source venv/bin/activate && python3 soundboard/main.py'
+Terminal=false
+X-GNOME-Autostart-enabled=true
+EOL
 ```
 
 ### Bedienung:
 - Tippen Sie auf die Buttons am Touchscreen
 - Verwenden Sie die konfigurierten GPIO-Tasten
 - Sounds werden abgespielt oder Befehle an den PC gesendet
+
+### Tastatur-Shortcuts:
+- ESC: Programm beenden
+- Numpad 0-9: Direkte Button-Auswahl
 
 ## Konfiguration
 
