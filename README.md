@@ -25,7 +25,7 @@ sudo apt-get install -y \
     lightdm
 
 # Audio-Optimierungen
-sudo nano /boot/config.txt
+sudo nano /boot/firmware/config.txt
 ```
 
 Fügen Sie folgende Zeilen zu config.txt hinzu:
@@ -90,8 +90,8 @@ sudo apt-get install -y \
 ### 2. Repository klonen
 
 ```bash
-git clone https://github.com/Nura-Dynamic/raspberry-soundboard.git
-cd raspberry-soundboard
+git clone https://github.com/Nura-Dynamic/Sound-Board.git
+cd Sound-Board
 ```
 
 ### 3. Virtuelle Umgebung erstellen und aktivieren
