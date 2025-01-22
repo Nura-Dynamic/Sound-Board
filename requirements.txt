@@ -1,8 +1,4 @@
-PyQt5>=5.15.0
-gpiozero>=1.6.2
-pygame>=2.1.0
 pyusb>=1.2.1
-RPi.GPIO>=0.7.0
 python-dotenv>=0.19.0
 setuptools>=45.0.0
 wheel>=0.37.0 

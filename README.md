@@ -84,6 +84,9 @@ sudo apt-get install -y \
     python3-rtmidi \
     python3-venv \
     python3-full \
+    python3-rpi.gpio \
+    python3-setuptools \
+    python3-wheel \
     git
 ```
 
@@ -115,6 +118,9 @@ pip install -r requirements.txt
 ```bash
 # Erstellen Sie eine .pth Datei in der virtuellen Umgebung
 echo "/usr/lib/python3/dist-packages" > venv/lib/python3.*/site-packages/system.pth
+
+# Überprüfen der Installation
+python3 -c "import PyQt5; import gpiozero; import pygame; print('Alle System-Pakete erfolgreich geladen!')"
 ```
 
 ### 5. Berechtigungen einrichten
