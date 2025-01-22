@@ -25,7 +25,7 @@ sudo apt-get install -y \
     lightdm
 
 # Audio-Optimierungen
-sudo nano /boot/config.txt
+sudo nano /boot/firmware/config.txt
 ```
 
 Fügen Sie folgende Zeilen zu config.txt hinzu:
