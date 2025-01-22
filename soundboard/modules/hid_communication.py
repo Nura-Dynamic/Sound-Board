@@ -22,17 +22,20 @@ class HIDCommunication:
             self.device = usb.core.find(idVendor=vendor_id, idProduct=product_id)
             
             if self.device is None:
-                logging.warning("HID-Gerät nicht gefunden - Emulationsmodus aktiv")
+                logging.info("HID-Gerät nicht gefunden - Offline-Modus aktiv")
                 self.emulation_mode = True
             else:
                 self.emulation_mode = False
                 # Setze USB-Konfiguration
-                self.device.set_configuration()
-                
-            logging.info("HID-Kommunikation initialisiert")
+                try:
+                    self.device.set_configuration()
+                    logging.info("HID-Gerät erfolgreich verbunden")
+                except usb.core.USBError as e:
+                    logging.warning(f"Konnte HID-Gerät nicht konfigurieren: {e}")
+                    self.emulation_mode = True
             
         except Exception as e:
-            logging.error(f"Fehler bei HID-Initialisierung: {e}")
+            logging.info(f"HID-Kommunikation nicht verfügbar: {e}")
             self.emulation_mode = True
 
     def send_command(self, command):
@@ -43,7 +46,7 @@ class HIDCommunication:
         """
         try:
             if self.emulation_mode:
-                logging.info(f"Emuliere HID-Befehl: {command}")
+                logging.debug(f"Offline-Modus: HID-Befehl {command} ignoriert")
                 return
                 
             # Mapping von Befehlen zu HID-Codes
@@ -63,7 +66,8 @@ class HIDCommunication:
                 logging.warning(f"Unbekannter Befehl: {command}")
                 
         except Exception as e:
-            logging.error(f"Fehler beim Senden des HID-Befehls: {e}")
+            logging.warning(f"HID-Befehl konnte nicht gesendet werden: {e}")
+            self.emulation_mode = True  # Schalte in Offline-Modus bei Fehlern
 
     def _send_keyboard_report(self, modifiers, keycodes):
         """
