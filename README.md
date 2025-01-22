@@ -116,8 +116,9 @@ pip install -r requirements.txt
 ### 4. Systemweite Python-Pakete verknüpfen
 
 ```bash
-# Erstellen Sie eine .pth Datei in der virtuellen Umgebung
-echo "/usr/lib/python3/dist-packages" > venv/lib/python3.*/site-packages/system.pth
+# Python-Version ermitteln und .pth Datei erstellen
+PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+echo "/usr/lib/python3/dist-packages" > venv/lib/python${PYTHON_VERSION}/site-packages/system.pth
 
 # Überprüfen der Installation
 python3 -c "import PyQt5; import gpiozero; import pygame; print('Alle System-Pakete erfolgreich geladen!')"
