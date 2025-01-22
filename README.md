@@ -82,6 +82,8 @@ sudo apt-get install -y \
     python3-pygame \
     python3-alsaaudio \
     python3-rtmidi \
+    python3-venv \
+    python3-full \
     git
 ```
 
@@ -92,13 +94,30 @@ git clone https://github.com/Nura-Dynamic/raspberry-soundboard.git
 cd raspberry-soundboard
 ```
 
-### 3. Python-Abhängigkeiten installieren
+### 3. Virtuelle Umgebung erstellen und aktivieren
 
 ```bash
-python3 -m pip install --user -r requirements.txt
+# Virtuelle Umgebung erstellen
+python3 -m venv venv
+
+# Virtuelle Umgebung aktivieren
+source venv/bin/activate
+
+# Pip upgraden
+pip install --upgrade pip
+
+# Abhängigkeiten installieren
+pip install -r requirements.txt
 ```
 
-### 4. Berechtigungen einrichten
+### 4. Systemweite Python-Pakete verknüpfen
+
+```bash
+# Erstellen Sie eine .pth Datei in der virtuellen Umgebung
+echo "/usr/lib/python3/dist-packages" > venv/lib/python3.*/site-packages/system.pth
+```
+
+### 5. Berechtigungen einrichten
 
 ```bash
 # Für USB-HID Zugriff
@@ -108,7 +127,7 @@ sudo usermod -a -G plugdev $USER
 sudo usermod -a -G audio $USER
 ```
 
-### 5. Konfigurationsdatei anpassen:
+### 6. Konfigurationsdatei anpassen:
 - Öffnen Sie `config.json` und passen Sie die Einstellungen an
 - Legen Sie Ihre Sounddateien im Ordner `sounds/` ab
 
@@ -138,6 +157,9 @@ soundboard/
 
 ```bash
 cd raspberry-soundboard
+# Virtuelle Umgebung aktivieren
+source venv/bin/activate
+# Soundboard starten
 python3 main.py
 ```
 
@@ -146,7 +168,7 @@ python3 main.py
 Fügen Sie folgenden Eintrag zu `/etc/rc.local` hinzu (vor `exit 0`):
 
 ```bash
-su pi -c 'cd /home/pi/raspberry-soundboard && python3 main.py &'
+su pi -c 'cd /home/pi/raspberry-soundboard && source venv/bin/activate && python3 main.py &'
 ```
 
 ### Bedienung:
