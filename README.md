@@ -89,7 +89,7 @@ sudo apt-get install -y \
 
 ```bash
 git clone https://github.com/Nura-Dynamic/Sound-Board.git
-cd Sound-Board.git
+cd Sound-Board
 ```
 
 ### 3. Python-Abhängigkeiten installieren
