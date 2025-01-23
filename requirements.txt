@@ -4,6 +4,7 @@ sounddevice
 numpy
 scipy
 librosa
+lazy_loader
 
 # GPIO und Hardware
 gpiozero>=1.6.2
