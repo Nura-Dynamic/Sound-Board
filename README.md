@@ -35,6 +35,30 @@ Kann auch unter Windows als HID-Empfänger verwendet werden.
 4. "Soundboard HID Device" auswählen
 5. WinUSB-Treiber installieren
 
+### Windows-Client installieren
+
+1. Python für Windows installieren von [python.org](https://www.python.org/downloads/)
+2. Windows-Client herunterladen und entpacken
+3. Abhängigkeiten installieren:
+```cmd
+cd windows_client
+pip install -r requirements.txt
+```
+
+4. Client starten:
+```cmd
+python soundboard_receiver.py
+```
+
+Der Client läuft im Hintergrund und verarbeitet die Befehle vom Soundboard.
+Er kann auch als Windows-Dienst installiert werden.
+
+5. Als Windows-Dienst installieren (optional):
+```cmd
+python install_service.py
+```
+Dies installiert den Client als Windows-Dienst und richtet den Autostart ein.
+
 ### Windows-Konfiguration
 
 Bearbeiten Sie die `config.json` für Windows-Befehle:
