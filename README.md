@@ -1,80 +1,47 @@
 # Raspberry Pi Soundboard
 
-Ein konfigurierbares Soundboard für den Raspberry Pi mit 10-Zoll Touchscreen und GPIO-Tasten.
-
-## Systemanforderungen
-
-- Raspberry Pi 5
-- Raspberry Pi OS mit Desktop
-- 10-Zoll Touchscreen
-- GPIO-Tasten (optional)
-
-## Vorbereitungen
-
-### 1. Raspberry Pi OS Installation
-
-```bash
-# Audio-Optimierungen
-sudo nano /boot/firmware/config.txt
-```
-
-Fügen Sie folgende Zeilen zu config.txt hinzu:
-```
-# Audio-Optimierungen
-dtparam=audio=on
-audio_pwm_mode=2
-
-# CPU-Optimierungen
-force_turbo=1
-
-# GPU-Speicher für Touchscreen
-gpu_mem=128
-```
-
-### 2. Audio-Konfiguration
-
-```bash
-# ALSA und PulseAudio Installation
-sudo apt-get install -y \
-    alsa-utils \
-    pulseaudio \
-    pulseaudio-utils
-
-# Realtime-Priorität für Audio
-sudo adduser $USER audio
-sudo nano /etc/security/limits.d/audio.conf
-```
-
-Fügen Sie folgende Zeilen zu audio.conf hinzu:
-```
-@audio   -  rtprio     95
-@audio   -  memlock    unlimited
-```
+Ein modernes Soundboard für den Raspberry Pi mit 10-Zoll Touchscreen, Audio-Effekten und GPIO-Steuerung.
 
 ## Features
 
-- 4x4 Touch-Button-Grid für Soundeffekte und Befehle
-- GPIO-Unterstützung für physische Tasten
-- USB HID-Kommunikation mit Windows PC
-- Konfigurierbare Audio-Wiedergabe
-- Logging-System für Fehlerdiagnose
+- 16 konfigurierbare Sound-Buttons
+- 4-Kanal Audio-Mixer
+- Echtzeit Audio-Effekte:
+  - Autotune
+  - Echo
+  - Reverb
+  - Distortion
+- Touch-optimierte Benutzeroberfläche
+- GPIO-Unterstützung für externe Tasten
+- USB HID-Kommunikation mit PC
+
+## Systemanforderungen
+
+- Raspberry Pi 4/5
+- Raspberry Pi OS mit Desktop
+- 10-Zoll Touchscreen (1280x800)
+- USB-Soundkarte oder HDMI-Audio
+- GPIO-Tasten (optional)
 
 ## Installation
 
-### 1. System-Abhängigkeiten installieren
+### 1. System-Pakete installieren
 
 ```bash
+# System-Updates
 sudo apt-get update
+sudo apt-get upgrade
+
+# Benötigte System-Pakete
 sudo apt-get install -y \
     python3-pip \
     python3-venv \
-    python3-full \
-    python3-pygame \
-    python3-gpiozero \
-    python3-usb \
-    python3-dotenv \
-    python3-setuptools \
-    python3-wheel
+    python3-dev \
+    portaudio19-dev \
+    libsndfile1 \
+    libasound2-dev \
+    python3-pyqt5 \
+    git
 ```
 
 ### 2. Repository klonen
@@ -84,71 +51,121 @@ git clone https://github.com/Nura-Dynamic/Sound-Board.git
 cd Sound-Board
 ```
 
-### 3. Virtuelle Umgebung erstellen
+### 3. Python-Umgebung einrichten
 
 ```bash
-# Virtuelle Umgebung mit Zugriff auf System-Pakete erstellen
-python3 -m venv venv --system-site-packages
+# Virtuelle Umgebung erstellen
+python3 -m venv venv
 
-# Virtuelle Umgebung aktivieren
+# Aktivieren
 source venv/bin/activate
+
+# Abhängigkeiten installieren
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-### 4. Berechtigungen einrichten
+### 4. Audio-Konfiguration
 
 ```bash
-# Für USB-HID Zugriff
-sudo usermod -a -G plugdev $USER
+# ALSA-Konfiguration
+sudo nano /etc/asound.conf
+```
 
-# Für Audio-Zugriff
+Fügen Sie folgende Zeilen ein:
+```
+pcm.!default {
+    type hw
+    card 1  # USB-Soundkarte oder HDMI
+}
+
+ctl.!default {
+    type hw
+    card 1
+}
+```
+
+### 5. Berechtigungen einrichten
+
+```bash
+# Audio-Gruppe
 sudo usermod -a -G audio $USER
+
+# GPIO-Gruppe
+sudo usermod -a -G gpio $USER
+
+# USB-Gruppe für HID
+sudo usermod -a -G plugdev $USER
 ```
 
-### 5. Konfigurationsdatei anpassen:
-- Öffnen Sie `config.json` und passen Sie die Einstellungen an
-- Legen Sie Ihre Sounddateien im Ordner `sounds/` ab
+## Konfiguration
 
-## Projektstruktur
+### Sound-Dateien
 
+1. Erstellen Sie einen `sounds` Ordner:
+```bash
+mkdir -p sounds
 ```
-soundboard/
-├── main.py              # Hauptanwendung
-├── config.json          # Konfigurationsdatei
-├── requirements.txt     # Python-Abhängigkeiten
-├── sounds/             # Verzeichnis für Audiodateien
-│   ├── sound1.wav
-│   └── sound2.wav
-├── logs/               # Log-Dateien
-└── modules/
-    ├── __init__.py
-    ├── audio.py        # Audio-Wiedergabe
-    ├── config_manager.py
-    ├── gpio_handler.py  # GPIO-Steuerung
-    ├── gui.py          # Benutzeroberfläche
-    └── hid_communication.py  # USB-Kommunikation
+
+2. Kopieren Sie Ihre .wav oder .mp3 Dateien in den Ordner
+
+### Button-Konfiguration
+
+Bearbeiten Sie `config.json`:
+
+```json
+{
+    "buttons": {
+        "0": {
+            "text": "Sound 1",
+            "action": "sound1.wav",
+            "type": "sound"
+        },
+        "1": {
+            "text": "Sound 2",
+            "action": "sound2.wav",
+            "type": "sound"
+        }
+    },
+    "audio_settings": {
+        "output_device": "default",
+        "volume": 1.0
+    }
+}
 ```
 
 ## Verwendung
 
-### Starten des Soundboards
+### Programm starten
 
 ```bash
-cd raspberry-soundboard
-# Virtuelle Umgebung aktivieren
+cd Sound-Board
 source venv/bin/activate
-# Soundboard starten
-python3 main.py
+python3 soundboard/main.py
 ```
 
-### Automatischer Start beim Systemstart
+### Bedienung
 
-Erstellen Sie einen Autostart-Eintrag:
+- **Sound-Buttons**: Tippen zum Abspielen
+- **Lautstärke-Regler**: 4 unabhängige Kanäle
+- **Effekt-Regler**:
+  - Auto: Autotune-Intensität
+  - Echo: Verzögerungszeit
+  - Rev: Reverb-Raumgröße
+  - Dist: Verzerrungsstärke
+
+### Tastenkürzel
+
+- `ESC`: Programm beenden
+- `1-9`: Direkte Button-Auswahl
+
+## Autostart einrichten
 
 ```bash
-# Erstelle Autostart-Verzeichnis
+# Autostart-Verzeichnis erstellen
 mkdir -p ~/.config/autostart
 
-# Erstelle Desktop-Eintrag
+# Desktop-Eintrag erstellen
 cat > ~/.config/autostart/soundboard.desktop << EOL
 [Desktop Entry]
 Type=Application
@@ -159,66 +176,45 @@ X-GNOME-Autostart-enabled=true
 EOL
 ```
 
-### Bedienung:
-- Tippen Sie auf die Buttons am Touchscreen
-- Verwenden Sie die konfigurierten GPIO-Tasten
-- Sounds werden abgespielt oder Befehle an den PC gesendet
+## Fehlerbehebung
 
-### Tastatur-Shortcuts:
-- ESC: Programm beenden
-- Numpad 0-9: Direkte Button-Auswahl
+### Audio-Probleme
 
-## Konfiguration
-
-Die `config.json` Datei enthält alle Einstellungen:
-
-```json
-{
-    "buttons": {
-        "0": "sound1.wav",
-        "1": "sound2.wav"
-    },
-    "gpio_pins": [17, 27],
-    "gpio_actions": {
-        "17": "play_pause",
-        "27": "volume_up"
-    },
-    "audio_settings": {
-        "output_device": "default",
-        "volume": 1.0
-    }
-}
+1. ALSA-Geräte prüfen:
+```bash
+aplay -l
 ```
 
-## Fehlersuche
+2. Audio-Gruppe prüfen:
+```bash
+groups | grep audio
+```
 
-### Log-Dateien prüfen
-- Prüfen Sie die Logs im `logs/` Verzeichnis
+3. Logs prüfen:
 ```bash
 tail -f logs/soundboard.log
 ```
 
-### Berechtigungen
-- Stellen Sie sicher, dass alle Berechtigungen korrekt gesetzt sind
+### GUI-Probleme
+
+1. X-Server Status:
 ```bash
-ls -l /dev/snd/  # Audio-Berechtigungen
-ls -l /dev/bus/usb/  # USB-Berechtigungen
+echo $DISPLAY
 ```
 
-### Audio-Test
+2. Qt-Plugins prüfen:
 ```bash
-# Test der Audio-Ausgabe
-speaker-test -t wav -c 2
+QT_DEBUG_PLUGINS=1 python3 soundboard/main.py
 ```
-
-### GPIO-Test
-```bash
-# GPIO-Pins anzeigen
-gpio readall
-```
-
-- Überprüfen Sie die Audio- und USB-Verbindungen
 
 ## Lizenz
 
-MIT License
+MIT License - Siehe LICENSE Datei
+
+## Beitragen
+
+1. Fork erstellen
+2. Feature Branch erstellen (`git checkout -b feature/AmazingFeature`)
+3. Änderungen committen (`git commit -m 'Add some AmazingFeature'`)
+4. Branch pushen (`git push origin feature/AmazingFeature`)
+5. Pull Request erstellen
