@@ -23,11 +23,14 @@ class Soundboard:
         self.config_manager = ConfigManager()
         self.config = self.config_manager.load_config()
         
-        # GUI als letztes initialisieren
+        # Audio-Player vor GUI initialisieren
+        self.audio_player = AudioPlayer(self.config['audio_settings'])
+        
+        # GUI initialisieren
         self.gui = SoundboardGUI(self._handle_button_press, self.config)
+        self.gui.set_audio_player(self.audio_player)  # Audio-Player-Referenz setzen
         
         # Andere Module nach GUI initialisieren
-        self.audio_player = AudioPlayer(self.config['audio_settings'])
         self.gpio_handler = GPIOHandler(self.config['gpio_pins'], self._handle_gpio_event)
         self.hid_comm = HIDCommunication()
         

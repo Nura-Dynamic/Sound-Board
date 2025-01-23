@@ -9,6 +9,7 @@ class SoundboardGUI(QMainWindow):
         """Initialisiert die Qt-basierte GUI"""
         super().__init__()
         self.button_callback = button_callback
+        self.audio_player = None  # Wird später gesetzt
         self.config = config
         
         # Farben für das Design
@@ -27,6 +28,10 @@ class SoundboardGUI(QMainWindow):
         except Exception as e:
             logging.error(f"Fehler bei GUI-Initialisierung: {e}")
             raise
+
+    def set_audio_player(self, audio_player):
+        """Setzt die Referenz zum AudioPlayer"""
+        self.audio_player = audio_player
 
     def init_ui(self):
         """Initialisiert die Benutzeroberfläche"""
@@ -140,7 +145,8 @@ class SoundboardGUI(QMainWindow):
             level.setStyleSheet("color: white;")
             level.setAlignment(Qt.AlignCenter)
             
-            slider.valueChanged.connect(lambda v, l=level: l.setText(str(v)))
+            # Verbinde Slider mit Audio-Funktionen
+            slider.valueChanged.connect(lambda v, ch=i, l=level: self._handle_volume_change(ch, v, l))
             
             slider_layout.addWidget(label)
             slider_layout.addWidget(slider)
@@ -157,6 +163,14 @@ class SoundboardGUI(QMainWindow):
         effect_params = [
             "Auto", "Echo", "Rev", "Dist"  # Kürzere Namen
         ]
+        
+        # Dictionary für Effekt-Namen
+        self.effect_names = {
+            0: 'autotune',
+            1: 'echo',
+            2: 'reverb',
+            3: 'distortion'
+        }
         
         for i, param in enumerate(effect_params):
             label = QLabel(param)
@@ -181,6 +195,9 @@ class SoundboardGUI(QMainWindow):
                 }
             """)
             
+            # Verbinde Effekt-Slider
+            slider.valueChanged.connect(lambda v, fx=i: self._handle_effect_change(fx, v))
+            
             effects_layout.addWidget(label, i, 0)
             effects_layout.addWidget(slider, i, 1)
         
@@ -200,4 +217,16 @@ class SoundboardGUI(QMainWindow):
         if event.key() == Qt.Key_Escape:
             self.close()
         else:
-            super().keyPressEvent(event) 
+            super().keyPressEvent(event)
+
+    def _handle_volume_change(self, channel, value, label):
+        """Verarbeitet Änderungen der Kanal-Lautstärke"""
+        if self.audio_player:
+            self.audio_player.set_channel_volume(channel, value)
+            label.setText(str(value))
+
+    def _handle_effect_change(self, effect_index, value):
+        """Verarbeitet Änderungen der Effekt-Parameter"""
+        if self.audio_player and effect_index in self.effect_names:
+            effect_name = self.effect_names[effect_index]
+            self.audio_player.set_effect_param(effect_name, value) 
