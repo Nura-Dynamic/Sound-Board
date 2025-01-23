@@ -6,8 +6,14 @@ import json
 import time
 from PyQt5.QtWidgets import (QApplication, QSystemTrayIcon, QMenu, 
                             QWidget, QVBoxLayout, QLabel, QPushButton)
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
+import base64
+
+# Icon als Base64-String (ein einfaches Lautsprecher-Icon)
+ICON_BASE64 = """
+iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAJhSURBVFiF7ZdNaBNBFMd/s9uktqixSG0CUqwgFT+gBw8q6EXwJB4EQcSDINqLX3gQBC2CJ8GT9KB48CKIiCAIgop48CsVRKUgiBUpiFW0tcakJN3ZedhNdrJJNtlNc+nA/GBg583M+8/8Z96bXaWUYjOhN1McqDtYoYBG0TvQKHoHGkVPowKUUhv+6QC2bbewLMuybQchJFJKpJQoJRFCALDaMYQQKKUQQiCEwPO8TGzbxnEcXNfF8zzyPI98Po/neQghSgKEEAghEEIQRREARVFEFEWEYUgYhoRhSBAEBEFAv99n0O8TxzFxHJMkCUmSkCQJruvi+z6DwYB8Pk+hUKBQKGBZVkuSJFiWhed5eJ6H67q4rovv+/i+TxAEhGFIFEXEcUwcxyRJQpqmpGlKmqYopYjjmDiOGQwGDAYDkiQhSRKSJEEpRZqmKKVQSqGUIo5jlFKlWCmFUoooilBKEUURURSVYsMwsCwL0zQxTRPDMLAsC9M0MQwDXdfRNA1d19E0DU3T0DQNXdfRdR1N09A0DV3XMQwDwzAwDANd10t9TdMwDAPTNLEsC8uycBwHx3FwXRfXdXEcB9u2sW0bx3GwbRvLsrAsC8dxcF0Xx3FwHAfP8/A8D9/38X2fIAgIw5AoioiiiDiOieOYJElIkoQkSUiShDRNSdOUNE2J45g4jkmShCRJSJKENE1RSpGmKUopkiQhSRKSJCFJEtI0RSmFUoo0TUnTlCiKiKKIMAwJw5AwDAmCgCAICAKv9CYMgoBCoUChUCCfz5PP5/E8D9d1cRwHx3GwLAvLsnAcB8dxsG0b27axLAvLsv4BQhHjN3hzJHMAAAAASUVORK5CYII=
+"""
 
 class HIDThread(QThread):
     command_received = pyqtSignal(list)
@@ -47,9 +53,17 @@ class SoundboardReceiver(QWidget):
         self.setup_logging()
         self.load_config()
         self.init_ui()
-        self.init_tray()
+        self.create_tray_icon()
         self.start_hid_thread()
         
+        # Zeige Willkommensnachricht im Tray
+        self.tray_icon.showMessage(
+            "Soundboard Receiver",
+            "Läuft im Hintergrund. Klicken Sie hier für mehr Optionen.",
+            QSystemTrayIcon.Information,
+            3000
+        )
+
     def setup_logging(self):
         log_dir = Path('logs')
         log_dir.mkdir(exist_ok=True)
@@ -87,48 +101,106 @@ class SoundboardReceiver(QWidget):
         
         self.setLayout(layout)
 
-    def init_tray(self):
-        self.tray_icon = QSystemTrayIcon(self)
+    def create_tray_icon(self):
+        # Erstelle Icon aus Base64-String
+        icon_data = base64.b64decode(ICON_BASE64)
+        pixmap = QPixmap()
+        pixmap.loadFromData(icon_data)
+        icon = QIcon(pixmap)
+        
+        self.tray_icon = QSystemTrayIcon(icon, self)
         self.tray_icon.setToolTip('Soundboard Receiver')
         
-        # Erstelle ein Kontextmenü
+        # Erstelle Kontextmenü
         menu = QMenu()
-        show_action = menu.addAction("Anzeigen")
+        
+        # Status-Aktion (nicht klickbar)
+        self.status_action = menu.addAction("Status: Verbunden")
+        self.status_action.setEnabled(False)
+        menu.addSeparator()
+        
+        # Normale Aktionen
+        show_action = menu.addAction("Fenster anzeigen")
         show_action.triggered.connect(self.show)
+        
+        menu.addSeparator()
         quit_action = menu.addAction("Beenden")
         quit_action.triggered.connect(self.quit_app)
         
         self.tray_icon.setContextMenu(menu)
+        self.tray_icon.activated.connect(self.tray_icon_activated)
         self.tray_icon.show()
 
+    def tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.show()
+            self.activateWindow()
+
     def start_hid_thread(self):
-        self.hid_thread = HIDThread(self.VENDOR_ID, self.PRODUCT_ID)
-        self.hid_thread.command_received.connect(self.handle_command)
-        self.hid_thread.start()
-        
-        self.status_label.setText("Verbunden und aktiv")
-        logging.info("HID Thread gestartet")
+        try:
+            self.hid_thread = HIDThread(self.VENDOR_ID, self.PRODUCT_ID)
+            self.hid_thread.command_received.connect(self.handle_command)
+            self.hid_thread.start()
+            
+            self.status_label.setText("Verbunden und aktiv")
+            self.status_action.setText("Status: Verbunden")
+            self.tray_icon.setToolTip('Soundboard Receiver (Aktiv)')
+            logging.info("HID Thread gestartet")
+            
+        except Exception as e:
+            error_msg = f"Verbindungsfehler: {e}"
+            self.status_label.setText("Fehler: Keine Verbindung")
+            self.status_action.setText("Status: Nicht verbunden")
+            self.tray_icon.setToolTip('Soundboard Receiver (Nicht verbunden)')
+            logging.error(error_msg)
+            
+            # Zeige Fehlermeldung im Tray
+            self.tray_icon.showMessage(
+                "Verbindungsfehler",
+                "Konnte keine Verbindung zum Soundboard herstellen.\n"
+                "Bitte überprüfen Sie die USB-Verbindung.",
+                QSystemTrayIcon.Warning,
+                5000
+            )
 
     def handle_command(self, data):
         try:
             command = data[0]
+            command_name = "Unbekannt"
             
             # Mediensteuerung
-            if command == 0x01:  # Play/Pause
+            if command == 0x01:
                 keyboard.send('play/pause media')
-            elif command == 0x02:  # Next
+                command_name = "Play/Pause"
+            elif command == 0x02:
                 keyboard.send('next track')
-            elif command == 0x03:  # Previous
+                command_name = "Nächster Track"
+            elif command == 0x03:
                 keyboard.send('previous track')
-            elif command == 0x04:  # Volume Up
+                command_name = "Vorheriger Track"
+            elif command == 0x04:
                 keyboard.send('volume up')
-            elif command == 0x05:  # Volume Down
+                command_name = "Lauter"
+            elif command == 0x05:
                 keyboard.send('volume down')
+                command_name = "Leiser"
                 
-            logging.info(f"Befehl ausgeführt: {hex(command)}")
+            # Aktualisiere Status
+            self.status_label.setText(f"Letzter Befehl: {command_name}")
+            logging.info(f"Befehl ausgeführt: {command_name} ({hex(command)})")
             
         except Exception as e:
-            logging.error(f"Fehler bei Befehlsverarbeitung: {e}")
+            error_msg = f"Fehler bei Befehlsverarbeitung: {e}"
+            self.status_label.setText("Fehler bei Befehlsverarbeitung")
+            logging.error(error_msg)
+            
+            self.tray_icon.showMessage(
+                "Fehler",
+                "Fehler bei der Befehlsverarbeitung.\n"
+                "Siehe Log für Details.",
+                QSystemTrayIcon.Warning,
+                3000
+            )
 
     def quit_app(self):
         self.hid_thread.running = False
