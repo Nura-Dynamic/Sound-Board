@@ -53,14 +53,14 @@ class SoundboardGUI(QMainWindow):
         
         # Vordefinierte Button-Konfiguration
         button_configs = {
-            '0': {'text': 'Sound 1', 'type': 'sound'},
-            '1': {'text': 'Sound 2', 'type': 'sound'},
-            '2': {'text': 'Play', 'type': 'play'},
-            '3': {'text': 'Stop', 'type': 'stop'},
-            '4': {'text': 'Auto', 'type': 'autotune'},  # Kürzere Namen
-            '5': {'text': 'Echo', 'type': 'effect'},
-            '6': {'text': 'Rev', 'type': 'effect'},     # Kürzere Namen
-            '7': {'text': 'Dist', 'type': 'effect'}     # Kürzere Namen
+            '0': {'text': 'Sound 1', 'type': 'sound', 'action': 'sound1.wav'},
+            '1': {'text': 'Sound 2', 'type': 'sound', 'action': 'sound2.wav'},
+            '2': {'text': 'Play', 'type': 'play', 'action': 'play'},
+            '3': {'text': 'Stop', 'type': 'stop', 'action': 'stop'},
+            '4': {'text': 'Auto', 'type': 'autotune', 'action': 'autotune'},
+            '5': {'text': 'Echo', 'type': 'effect', 'action': 'echo'},
+            '6': {'text': 'Rev', 'type': 'effect', 'action': 'reverb'},
+            '7': {'text': 'Dist', 'type': 'effect', 'action': 'distortion'}
         }
         
         # Erstelle Buttons
@@ -71,13 +71,14 @@ class SoundboardGUI(QMainWindow):
             for col in range(4):
                 button_id = str(row * 4 + col)
                 config = button_configs.get(button_id, {
-                    'text': f'B{int(button_id) + 1}',  # Kürzere Namen
-                    'type': 'default'
+                    'text': f'B{int(button_id) + 1}',
+                    'type': 'default',
+                    'action': None
                 })
                 
                 button = QPushButton(config['text'])
                 button.setFont(button_font)
-                button.setMinimumSize(120, 80)  # Angepasste Größe für 10 Zoll
+                button.setMinimumSize(120, 80)
                 
                 color = self.button_colors[config['type']]
                 style = f"""
@@ -93,7 +94,11 @@ class SoundboardGUI(QMainWindow):
                     }}
                 """
                 button.setStyleSheet(style)
-                button.clicked.connect(lambda checked, x=button_id: self.button_callback(x))
+                
+                # Speichere action in button.property
+                button.setProperty('action', config['action'])
+                button.clicked.connect(lambda checked, b=button: self._handle_button_click(b))
+                
                 grid.addWidget(button, row, col)
         
         # Rechte Seite: Mixer und Effekte (30% der Breite)
@@ -229,4 +234,41 @@ class SoundboardGUI(QMainWindow):
         """Verarbeitet Änderungen der Effekt-Parameter"""
         if self.audio_player and effect_index in self.effect_names:
             effect_name = self.effect_names[effect_index]
-            self.audio_player.set_effect_param(effect_name, value) 
+            self.audio_player.set_effect_param(effect_name, value)
+
+    def _handle_button_click(self, button):
+        """Verarbeitet Button-Klicks"""
+        try:
+            action = button.property('action')
+            if action:
+                if action.endswith(('.wav', '.mp3')):
+                    # Spiele Sound ab
+                    if self.audio_player:
+                        self.audio_player.play(action)
+                elif action in ['play', 'stop']:
+                    # Mediensteuerung
+                    if self.audio_player:
+                        if action == 'play':
+                            self.hid_device.send_command(0x01)  # Play/Pause
+                            self.audio_player.play(None)
+                        else:
+                            self.hid_device.send_command(0x04)  # Stop
+                            self.audio_player.stop()
+                elif action in ['autotune', 'echo', 'reverb', 'distortion']:
+                    # Toggle Effekt
+                    if self.audio_player:
+                        self.audio_player.toggle_effect(action)
+                        # Sende entsprechenden HID-Befehl
+                        if action == 'autotune':
+                            self.hid_device.send_command(0x10)
+                        elif action == 'echo':
+                            self.hid_device.send_command(0x11)
+                        elif action == 'reverb':
+                            self.hid_device.send_command(0x12)
+                        elif action == 'distortion':
+                            self.hid_device.send_command(0x13)
+                
+                logging.info(f"Button-Aktion ausgeführt: {action}")
+                
+        except Exception as e:
+            logging.error(f"Fehler bei Button-Verarbeitung: {e}") 

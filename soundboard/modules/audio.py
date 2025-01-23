@@ -84,4 +84,23 @@ class AudioPlayer:
                 volume_int = max(0, min(100, int(volume)))
                 self.players[channel].setVolume(volume_int)
         except Exception as e:
-            logging.error(f"Fehler beim Setzen der Kanal-Lautstärke: {e}") 
+            logging.error(f"Fehler beim Setzen der Kanal-Lautstärke: {e}")
+
+    def toggle_effect(self, effect_name):
+        """Schaltet einen Audio-Effekt ein/aus"""
+        try:
+            if effect_name in self.effects.effects:
+                current = self.effects.effects[effect_name]
+                key = list(current.keys())[0]  # z.B. 'amount' oder 'time'
+                
+                # Toggle zwischen 0 und vorherigem Wert
+                if current[key] > 0:
+                    self._previous_values[effect_name] = current[key]
+                    current[key] = 0
+                else:
+                    current[key] = self._previous_values.get(effect_name, 50)
+                    
+                logging.info(f"Effekt {effect_name} auf {current[key]} gesetzt")
+                
+        except Exception as e:
+            logging.error(f"Fehler beim Umschalten von {effect_name}: {e}") 

@@ -8,6 +8,7 @@ from modules.gui import SoundboardGUI
 from modules.audio import AudioPlayer
 from modules.gpio_handler import GPIOHandler
 from modules.hid_communication import HIDCommunication
+from modules.hid_device import HIDDevice
 from modules.config_manager import ConfigManager
 import sys
 
@@ -25,10 +26,12 @@ class Soundboard:
         
         # Audio-Player vor GUI initialisieren
         self.audio_player = AudioPlayer(self.config['audio_settings'])
+        self.hid_device = HIDDevice()
         
         # GUI initialisieren
         self.gui = SoundboardGUI(self._handle_button_press, self.config)
         self.gui.set_audio_player(self.audio_player)  # Audio-Player-Referenz setzen
+        self.gui.hid_device = self.hid_device
         
         # Andere Module nach GUI initialisieren
         self.gpio_handler = GPIOHandler(self.config['gpio_pins'], self._handle_gpio_event)
