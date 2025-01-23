@@ -28,9 +28,15 @@ class SoundboardGUI:
             # Touch-Optimierungen
             pygame.event.set_allowed([pygame.QUIT, pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN])
             
-            # Farben aus Konfiguration laden
-            self.background_color = tuple(self.config['gui_settings']['background_color'])
-            self.feedback_color = tuple(self.config['gui_settings']['feedback_color'])
+            # Farben für das neue Design
+            self.background_color = (0, 0, 0)  # Schwarzer Hintergrund
+            self.button_colors = {
+                'default': (255, 255, 255),  # Weiß
+                'sound': (200, 200, 255),    # Hellblau
+                'play': (200, 255, 200),     # Hellgrün
+                'stop': (255, 200, 200)      # Hellrot
+            }
+            self.feedback_color = (100, 100, 100)  # Dunkelgrau für Feedback
             
             # Button-Grid erstellen
             self.buttons = self._create_buttons()
@@ -45,12 +51,20 @@ class SoundboardGUI:
     def _create_buttons(self):
         """Erstellt das 4x4 Button-Grid"""
         buttons = []
-        margin = self.config['gui_settings']['button_margin']
+        margin = 10  # Kleinerer Rand für mehr Platz
         cols, rows = 4, 4
         
-        # Buttongrößen berechnen
         button_width = (self.width - (cols + 1) * margin) // cols
         button_height = (self.height - (rows + 1) * margin) // rows
+        
+        # Vordefinierte Button-Konfiguration
+        button_configs = {
+            '0': {'text': 'Sound 1', 'type': 'sound'},
+            '1': {'text': 'Sound 2', 'type': 'sound'},
+            '2': {'text': 'Play', 'type': 'play'},
+            '3': {'text': 'Stop', 'type': 'stop'},
+            # Weitere Buttons mit Standardwerten
+        }
         
         for row in range(rows):
             for col in range(cols):
@@ -58,19 +72,19 @@ class SoundboardGUI:
                 y = margin + row * (button_height + margin)
                 button_id = str(row * cols + col)
                 
-                # Button-Konfiguration aus config laden
-                button_config = self.config['buttons'].get(button_id, {
-                    "text": f"Button {button_id}",
-                    "color": [255, 255, 255]
+                # Button-Konfiguration mit Fallback
+                config = button_configs.get(button_id, {
+                    'text': f'Button {int(button_id) + 1}',
+                    'type': 'default'
                 })
                 
                 button = {
                     'rect': pygame.Rect(x, y, button_width, button_height),
                     'id': button_id,
-                    'text': button_config['text'],
+                    'text': config['text'],
                     'pressed': False,
-                    'color': tuple(button_config['color']),
-                    'original_color': tuple(button_config['color'])
+                    'color': self.button_colors[config['type']],
+                    'original_color': self.button_colors[config['type']]
                 }
                 buttons.append(button)
                 
@@ -120,12 +134,13 @@ class SoundboardGUI:
         
         for button in self.buttons:
             color = self.feedback_color if button['pressed'] else button['color']
-            pygame.draw.rect(self.screen, color, button['rect'])
-            pygame.draw.rect(self.screen, self.background_color, button['rect'], 2)  # Rahmen
             
-            # Text rendern
-            font = pygame.font.Font(None, self.config['gui_settings']['font_size'])
-            text = font.render(button['text'], True, self.background_color)
+            # Button mit abgerundeten Ecken
+            pygame.draw.rect(self.screen, color, button['rect'], border_radius=10)
+            
+            # Größerer, deutlicherer Text
+            font = pygame.font.Font(None, 36)
+            text = font.render(button['text'], True, (0, 0, 0))  # Schwarzer Text
             text_rect = text.get_rect(center=button['rect'].center)
             self.screen.blit(text, text_rect)
         
