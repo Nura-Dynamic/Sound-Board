@@ -1,13 +1,9 @@
-# Leere requirements.txt da wir System-Pakete verwenden 
-
-# GUI und System
-
 # Audio-Verarbeitung
-numpy>=1.19.0
-scipy>=1.7.0
-soundfile>=0.10.3
-librosa>=0.8.0
-sounddevice>=0.4.1
+soundfile
+sounddevice
+numpy
+scipy
+librosa
 
 # GPIO und Hardware
 gpiozero>=1.6.2
@@ -15,7 +11,6 @@ pyusb>=1.2.1
 RPi.GPIO>=0.7.0
 
 # GUI
-PyQt5>=5.15.0
 
 # Utilities
 python-dotenv>=0.19.0
