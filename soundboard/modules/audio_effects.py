@@ -1,4 +1,3 @@
-import pygame
 import numpy as np
 from scipy import signal
 import soundfile as sf

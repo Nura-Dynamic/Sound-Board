@@ -1,28 +1,26 @@
-import pygame
+from PyQt5.QtMultimedia import QSound, QMediaPlayer, QMediaContent
+from PyQt5.QtCore import QUrl
 import logging
 from pathlib import Path
 from .audio_effects import AudioEffects
-import numpy as np
 import soundfile as sf
 
 class AudioPlayer:
     def __init__(self, audio_settings):
         """
         Initialisiert den Audio-Player mit den gegebenen Einstellungen
-        
-        :param audio_settings: Dict mit Audio-Einstellungen (output_device, volume)
         """
         try:
-            pygame.mixer.init()
-            pygame.mixer.set_num_channels(16)  # Erlaubt mehrere gleichzeitige Sounds
-            
             self.volume = audio_settings.get('volume', 1.0)
-            pygame.mixer.music.set_volume(self.volume)
-            
             self.sounds_dir = Path('sounds')
             self.sounds_dir.mkdir(exist_ok=True)
             
-            self.sound_cache = {}
+            # Media Player für jeden Kanal
+            self.players = [QMediaPlayer() for _ in range(16)]
+            for player in self.players:
+                player.setVolume(int(self.volume * 100))
+            
+            self.current_player = 0
             self.effects = AudioEffects()
             
             logging.info("Audio-Player erfolgreich initialisiert")
@@ -38,8 +36,6 @@ class AudioPlayer:
     def play(self, sound_file):
         """
         Spielt eine Audiodatei ab
-        
-        :param sound_file: Name der Audiodatei
         """
         try:
             sound_path = self.sounds_dir / sound_file
@@ -48,20 +44,21 @@ class AudioPlayer:
                 logging.error(f"Audiodatei nicht gefunden: {sound_path}")
                 return
                 
-            # Lade Audio mit soundfile
+            # Lade und verarbeite Audio
             audio_data, sample_rate = sf.read(str(sound_path))
-            
-            # Wende Effekte an
             processed = self.effects.process_audio(audio_data, sample_rate)
             
             # Speichere verarbeitetes Audio temporär
             temp_path = self.sounds_dir / f"temp_{sound_file}"
             sf.write(temp_path, processed, sample_rate)
             
-            # Lade Sound aus Cache oder neu
-            self.sound_cache[str(sound_path)] = pygame.mixer.Sound(str(temp_path))
+            # Wähle nächsten verfügbaren Player
+            player = self.players[self.current_player]
+            self.current_player = (self.current_player + 1) % len(self.players)
             
-            self.sound_cache[str(sound_path)].play()
+            # Spiele Sound ab
+            player.setMedia(QMediaContent(QUrl.fromLocalFile(str(temp_path))))
+            player.play()
             
         except Exception as e:
             logging.error(f"Fehler beim Abspielen von {sound_file}: {e}")
@@ -72,6 +69,19 @@ class AudioPlayer:
         """
         try:
             self.volume = max(0.0, min(1.0, volume))
-            pygame.mixer.music.set_volume(self.volume)
+            volume_int = int(self.volume * 100)
+            for player in self.players:
+                player.setVolume(volume_int)
         except Exception as e:
-            logging.error(f"Fehler beim Setzen der Lautstärke: {e}") 
+            logging.error(f"Fehler beim Setzen der Lautstärke: {e}")
+
+    def set_channel_volume(self, channel, volume):
+        """
+        Setzt die Lautstärke für einen bestimmten Kanal
+        """
+        try:
+            if 0 <= channel < len(self.players):
+                volume_int = max(0, min(100, int(volume)))
+                self.players[channel].setVolume(volume_int)
+        except Exception as e:
+            logging.error(f"Fehler beim Setzen der Kanal-Lautstärke: {e}") 

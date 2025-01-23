@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QPushButton, QGridLayout, 
                             QVBoxLayout, QHBoxLayout, QSlider, QLabel)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QPalette, QColor, QFont
 import logging
 
 class SoundboardGUI(QMainWindow):
@@ -38,11 +38,13 @@ class SoundboardGUI(QMainWindow):
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_layout = QHBoxLayout(main_widget)
+        main_layout.setSpacing(5)  # Geringerer Abstand für 10 Zoll
+        main_layout.setContentsMargins(5, 5, 5, 5)  # Kleinere Ränder
         
-        # Linke Seite: Soundboard-Buttons
+        # Linke Seite: Soundboard-Buttons (70% der Breite)
         left_widget = QWidget()
         grid = QGridLayout(left_widget)
-        grid.setSpacing(10)
+        grid.setSpacing(5)  # Geringerer Abstand zwischen Buttons
         
         # Vordefinierte Button-Konfiguration
         button_configs = {
@@ -50,57 +52,65 @@ class SoundboardGUI(QMainWindow):
             '1': {'text': 'Sound 2', 'type': 'sound'},
             '2': {'text': 'Play', 'type': 'play'},
             '3': {'text': 'Stop', 'type': 'stop'},
-            '4': {'text': 'Autotune', 'type': 'autotune'},
+            '4': {'text': 'Auto', 'type': 'autotune'},  # Kürzere Namen
             '5': {'text': 'Echo', 'type': 'effect'},
-            '6': {'text': 'Reverb', 'type': 'effect'},
-            '7': {'text': 'Distortion', 'type': 'effect'}
+            '6': {'text': 'Rev', 'type': 'effect'},     # Kürzere Namen
+            '7': {'text': 'Dist', 'type': 'effect'}     # Kürzere Namen
         }
         
         # Erstelle Buttons
+        button_font = QFont()
+        button_font.setPointSize(14)  # Größere Schrift für Touch
+        
         for row in range(4):
             for col in range(4):
                 button_id = str(row * 4 + col)
                 config = button_configs.get(button_id, {
-                    'text': f'Button {int(button_id) + 1}',
+                    'text': f'B{int(button_id) + 1}',  # Kürzere Namen
                     'type': 'default'
                 })
                 
                 button = QPushButton(config['text'])
-                button.setMinimumSize(180, 100)
+                button.setFont(button_font)
+                button.setMinimumSize(120, 80)  # Angepasste Größe für 10 Zoll
                 
                 color = self.button_colors[config['type']]
                 style = f"""
                     QPushButton {{
                         background-color: {color.name()};
                         border: 2px solid #666666;
-                        border-radius: 10px;
-                        font-size: 24px;
+                        border-radius: 8px;
                         font-weight: bold;
                     }}
                     QPushButton:pressed {{
                         background-color: #666666;
+                        border-style: inset;
                     }}
                 """
                 button.setStyleSheet(style)
                 button.clicked.connect(lambda checked, x=button_id: self.button_callback(x))
                 grid.addWidget(button, row, col)
         
-        # Rechte Seite: Mixer und Effekte
+        # Rechte Seite: Mixer und Effekte (30% der Breite)
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
+        right_layout.setSpacing(5)
         
         # Lautstärkeregler
         mixer_widget = QWidget()
         mixer_layout = QHBoxLayout(mixer_widget)
+        mixer_layout.setSpacing(2)  # Sehr geringer Abstand
         
         # Erstelle 4 Lautstärkeregler
         for i in range(4):
             slider_container = QWidget()
             slider_layout = QVBoxLayout(slider_container)
+            slider_layout.setSpacing(2)
             
             # Label
-            label = QLabel(f"Channel {i+1}")
-            label.setStyleSheet("color: white; font-size: 18px;")
+            label = QLabel(f"Ch {i+1}")  # Kürzere Namen
+            label.setFont(button_font)
+            label.setStyleSheet("color: white;")
             label.setAlignment(Qt.AlignCenter)
             
             # Slider
@@ -108,28 +118,29 @@ class SoundboardGUI(QMainWindow):
             slider.setMinimum(0)
             slider.setMaximum(100)
             slider.setValue(75)
-            slider.setMinimumHeight(200)
+            slider.setMinimumHeight(150)  # Angepasste Höhe
             slider.setStyleSheet("""
                 QSlider::groove:vertical {
                     background: #666666;
-                    width: 20px;
-                    border-radius: 10px;
+                    width: 12px;
+                    border-radius: 6px;
                 }
                 QSlider::handle:vertical {
                     background: #00ff00;
-                    height: 30px;
-                    width: 30px;
-                    margin: -4px -5px;
-                    border-radius: 15px;
+                    height: 20px;
+                    width: 20px;
+                    margin: -2px -4px;
+                    border-radius: 10px;
                 }
             """)
             
             # Level-Anzeige
-            level = QLabel("75%")
-            level.setStyleSheet("color: white; font-size: 16px;")
+            level = QLabel("75")  # Kürzerer Text
+            level.setFont(button_font)
+            level.setStyleSheet("color: white;")
             level.setAlignment(Qt.AlignCenter)
             
-            slider.valueChanged.connect(lambda v, l=level: l.setText(f"{v}%"))
+            slider.valueChanged.connect(lambda v, l=level: l.setText(str(v)))
             
             slider_layout.addWidget(label)
             slider_layout.addWidget(slider)
@@ -141,15 +152,16 @@ class SoundboardGUI(QMainWindow):
         # Effekt-Parameter
         effects_widget = QWidget()
         effects_layout = QGridLayout(effects_widget)
+        effects_layout.setSpacing(5)
         
         effect_params = [
-            "Autotune Amount", "Echo Time", 
-            "Reverb Size", "Distortion"
+            "Auto", "Echo", "Rev", "Dist"  # Kürzere Namen
         ]
         
         for i, param in enumerate(effect_params):
             label = QLabel(param)
-            label.setStyleSheet("color: white; font-size: 16px;")
+            label.setFont(button_font)
+            label.setStyleSheet("color: white;")
             
             slider = QSlider(Qt.Horizontal)
             slider.setMinimum(0)
@@ -158,14 +170,14 @@ class SoundboardGUI(QMainWindow):
             slider.setStyleSheet("""
                 QSlider::groove:horizontal {
                     background: #666666;
-                    height: 20px;
-                    border-radius: 10px;
+                    height: 12px;
+                    border-radius: 6px;
                 }
                 QSlider::handle:horizontal {
                     background: #ff00ff;
-                    width: 30px;
-                    margin: -5px 0;
-                    border-radius: 15px;
+                    width: 20px;
+                    margin: -4px 0;
+                    border-radius: 10px;
                 }
             """)
             
@@ -174,9 +186,9 @@ class SoundboardGUI(QMainWindow):
         
         right_layout.addWidget(effects_widget)
         
-        # Füge beide Seiten zum Hauptlayout hinzu
-        main_layout.addWidget(left_widget, stretch=2)
-        main_layout.addWidget(right_widget, stretch=1)
+        # Layout-Verhältnis anpassen
+        main_layout.addWidget(left_widget, stretch=7)  # 70%
+        main_layout.addWidget(right_widget, stretch=3) # 30%
         
         # Setze schwarzen Hintergrund
         palette = self.palette()
