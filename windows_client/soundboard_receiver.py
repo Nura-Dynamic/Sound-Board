@@ -1,4 +1,5 @@
 import hid
+import sys
 import keyboard
 import logging
 from pathlib import Path
