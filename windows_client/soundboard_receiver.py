@@ -4,17 +4,52 @@ import logging
 from pathlib import Path
 import json
 import time
+from PyQt5.QtWidgets import (QApplication, QSystemTrayIcon, QMenu, 
+                            QWidget, QVBoxLayout, QLabel, QPushButton)
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
-class SoundboardReceiver:
+class HIDThread(QThread):
+    command_received = pyqtSignal(list)
+    
+    def __init__(self, vendor_id, product_id):
+        super().__init__()
+        self.vendor_id = vendor_id
+        self.product_id = product_id
+        self.running = True
+        
+    def run(self):
+        try:
+            device = hid.device()
+            device.open(self.vendor_id, self.product_id)
+            device.set_nonblocking(True)
+            
+            while self.running:
+                data = device.read(64)
+                if data:
+                    self.command_received.emit(data)
+                time.sleep(0.01)
+                
+        except Exception as e:
+            logging.error(f"HID Thread Error: {e}")
+        finally:
+            try:
+                device.close()
+            except:
+                pass
+
+class SoundboardReceiver(QWidget):
     def __init__(self):
-        # Soundboard USB IDs
+        super().__init__()
         self.VENDOR_ID = 0x0483
         self.PRODUCT_ID = 0x5750
         
         self.setup_logging()
         self.load_config()
-        self.connect_device()
-
+        self.init_ui()
+        self.init_tray()
+        self.start_hid_thread()
+        
     def setup_logging(self):
         log_dir = Path('logs')
         log_dir.mkdir(exist_ok=True)
@@ -34,21 +69,45 @@ class SoundboardReceiver:
             logging.error(f"Fehler beim Laden der Konfiguration: {e}")
             self.config = {}
 
-    def connect_device(self):
-        try:
-            self.device = hid.device()
-            self.device.open(self.VENDOR_ID, self.PRODUCT_ID)
-            self.device.set_nonblocking(True)
-            
-            logging.info("Soundboard verbunden")
-            print("Soundboard erfolgreich verbunden!")
-            print("Warte auf Befehle...")
-            
-        except Exception as e:
-            logging.error(f"Verbindungsfehler: {e}")
-            print("Konnte Soundboard nicht finden!")
-            print("Bitte überprüfen Sie die Verbindung und Treiber")
-            exit(1)
+    def init_ui(self):
+        self.setWindowTitle('Soundboard Receiver')
+        self.setFixedSize(300, 200)
+        
+        layout = QVBoxLayout()
+        
+        # Status Label
+        self.status_label = QLabel("Warte auf Verbindung...")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.status_label)
+        
+        # Minimize Button
+        minimize_btn = QPushButton("In Tray minimieren")
+        minimize_btn.clicked.connect(self.hide)
+        layout.addWidget(minimize_btn)
+        
+        self.setLayout(layout)
+
+    def init_tray(self):
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setToolTip('Soundboard Receiver')
+        
+        # Erstelle ein Kontextmenü
+        menu = QMenu()
+        show_action = menu.addAction("Anzeigen")
+        show_action.triggered.connect(self.show)
+        quit_action = menu.addAction("Beenden")
+        quit_action.triggered.connect(self.quit_app)
+        
+        self.tray_icon.setContextMenu(menu)
+        self.tray_icon.show()
+
+    def start_hid_thread(self):
+        self.hid_thread = HIDThread(self.VENDOR_ID, self.PRODUCT_ID)
+        self.hid_thread.command_received.connect(self.handle_command)
+        self.hid_thread.start()
+        
+        self.status_label.setText("Verbunden und aktiv")
+        logging.info("HID Thread gestartet")
 
     def handle_command(self, data):
         try:
@@ -71,21 +130,27 @@ class SoundboardReceiver:
         except Exception as e:
             logging.error(f"Fehler bei Befehlsverarbeitung: {e}")
 
-    def run(self):
-        print("Drücken Sie Strg+C zum Beenden")
-        
-        try:
-            while True:
-                data = self.device.read(64)
-                if data:
-                    self.handle_command(data)
-                time.sleep(0.01)
-                
-        except KeyboardInterrupt:
-            print("\nProgramm wird beendet...")
-        finally:
-            self.device.close()
+    def quit_app(self):
+        self.hid_thread.running = False
+        self.hid_thread.wait()
+        QApplication.quit()
+
+    def closeEvent(self, event):
+        # Beim Klick auf X nur minimieren statt beenden
+        event.ignore()
+        self.hide()
+
+def main():
+    import sys
+    app = QApplication(sys.argv)
+    
+    # Verhindere, dass die App sich beendet wenn das letzte Fenster geschlossen wird
+    app.setQuitOnLastWindowClosed(False)
+    
+    receiver = SoundboardReceiver()
+    receiver.show()
+    
+    return app.exec_()
 
 if __name__ == "__main__":
-    receiver = SoundboardReceiver()
-    receiver.run() 
+    sys.exit(main()) 
