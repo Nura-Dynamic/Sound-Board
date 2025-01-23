@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from PyQt5.QtWidgets import QApplication
 from modules.gui import SoundboardGUI
 from modules.audio import AudioPlayer
 from modules.gpio_handler import GPIOHandler
@@ -11,7 +12,10 @@ from modules.config_manager import ConfigManager
 import sys
 
 class Soundboard:
-    def __init__(self):
+    def __init__(self, app):
+        # QApplication Referenz speichern
+        self.app = app
+        
         # Logging zuerst einrichten
         self._setup_logging()
         
@@ -40,7 +44,8 @@ class Soundboard:
     def _handle_button_press(self, button_id):
         """Verarbeitet Touchscreen-Button-Events"""
         try:
-            action = self.config['buttons'].get(str(button_id))
+            button_config = self.config['buttons'].get(str(button_id))
+            action = button_config.get('action') if button_config else None
             if action:
                 if action.endswith(('.wav', '.mp3')):
                     self.audio_player.play(action)
@@ -66,16 +71,18 @@ class Soundboard:
         try:
             logging.info("Soundboard wird gestartet...")
             self.gui.show()
-            return QApplication.instance().exec_()
+            return self.app.exec_()
         except Exception as e:
             logging.error(f"Kritischer Fehler: {e}")
             raise
 
 def main():
+    # Erstelle QApplication vor allem anderen
+    app = QApplication(sys.argv)
+    
     try:
-        soundboard = Soundboard()
-        soundboard.gui.run()
-        return 0
+        soundboard = Soundboard(app)
+        return soundboard.run()
     except Exception as e:
         logging.error(f"Fataler Fehler: {e}")
         return 1

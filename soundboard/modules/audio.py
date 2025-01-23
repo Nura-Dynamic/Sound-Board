@@ -1,6 +1,9 @@
 import pygame
 import logging
 from pathlib import Path
+from .audio_effects import AudioEffects
+import numpy as np
+import soundfile as sf
 
 class AudioPlayer:
     def __init__(self, audio_settings):
@@ -19,12 +22,18 @@ class AudioPlayer:
             self.sounds_dir = Path('sounds')
             self.sounds_dir.mkdir(exist_ok=True)
             
-            self.sound_cache = {}  # Cache für geladene Sounds
+            self.sound_cache = {}
+            self.effects = AudioEffects()
+            
             logging.info("Audio-Player erfolgreich initialisiert")
             
         except Exception as e:
             logging.error(f"Fehler bei Audio-Player-Initialisierung: {e}")
             raise
+
+    def set_effect_param(self, effect_name, value):
+        """Setzt Parameter für einen Audio-Effekt"""
+        self.effects.set_effect_param(effect_name, value)
 
     def play(self, sound_file):
         """
@@ -39,9 +48,18 @@ class AudioPlayer:
                 logging.error(f"Audiodatei nicht gefunden: {sound_path}")
                 return
                 
+            # Lade Audio mit soundfile
+            audio_data, sample_rate = sf.read(str(sound_path))
+            
+            # Wende Effekte an
+            processed = self.effects.process_audio(audio_data, sample_rate)
+            
+            # Speichere verarbeitetes Audio temporär
+            temp_path = self.sounds_dir / f"temp_{sound_file}"
+            sf.write(temp_path, processed, sample_rate)
+            
             # Lade Sound aus Cache oder neu
-            if str(sound_path) not in self.sound_cache:
-                self.sound_cache[str(sound_path)] = pygame.mixer.Sound(str(sound_path))
+            self.sound_cache[str(sound_path)] = pygame.mixer.Sound(str(temp_path))
             
             self.sound_cache[str(sound_path)].play()
             
