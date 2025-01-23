@@ -2,6 +2,8 @@
 
 Ein modernes Soundboard für den Raspberry Pi mit 10-Zoll Touchscreen, Audio-Effekten und GPIO-Steuerung.
 
+Kann auch unter Windows als HID-Empfänger verwendet werden.
+
 ## Features
 
 - 16 konfigurierbare Sound-Buttons
@@ -13,7 +15,7 @@ Ein modernes Soundboard für den Raspberry Pi mit 10-Zoll Touchscreen, Audio-Eff
   - Distortion
 - Touch-optimierte Benutzeroberfläche
 - GPIO-Unterstützung für externe Tasten
-- USB HID-Kommunikation mit PC
+- USB HID-Kommunikation mit Windows PC
 
 ## Systemanforderungen
 
@@ -23,7 +25,63 @@ Ein modernes Soundboard für den Raspberry Pi mit 10-Zoll Touchscreen, Audio-Eff
 - USB-Soundkarte oder HDMI-Audio
 - GPIO-Tasten (optional)
 
+## Windows-Kompatibilität
+
+### Windows-Treiber installieren
+
+1. Zadig USB-Treiber herunterladen: [https://zadig.akeo.ie/](https://zadig.akeo.ie/)
+2. Zadig ausführen
+3. Options -> List All Devices aktivieren
+4. "Soundboard HID Device" auswählen
+5. WinUSB-Treiber installieren
+
+### Windows-Konfiguration
+
+Bearbeiten Sie die `config.json` für Windows-Befehle:
+
+```json
+{
+    "buttons": {
+        "4": {
+            "text": "Play",
+            "action": "media_play_pause",
+            "type": "command"
+        },
+        "5": {
+            "text": "Next",
+            "action": "media_next",
+            "type": "command"
+        }
+    },
+    "hid_commands": {
+        "media_play_pause": [0x01],
+        "media_next": [0x02],
+        "media_prev": [0x03],
+        "volume_up": [0x04],
+        "volume_down": [0x05]
+    }
+}
+```
+
+### Unterstützte Windows-Befehle
+
+- Mediensteuerung:
+  - play_pause
+  - next_track
+  - prev_track
+  - volume_up
+  - volume_down
+  - mute
+- Tastatureingaben
+- Maussteuerung
+
 ## Installation
+
+### Windows (für HID-Empfang)
+
+1. Zadig USB-Treiber installieren
+2. Soundboard am USB-Port anschließen
+3. Windows erkennt das Gerät als "HID-konformes Gerät"
 
 ### 1. System-Pakete installieren
 
@@ -41,6 +99,7 @@ sudo apt-get install -y \
     libsndfile1 \
     libasound2-dev \
     python3-pyqt5 \
+    python3-usb \
     git
 ```
 
@@ -177,6 +236,21 @@ EOL
 ```
 
 ## Fehlerbehebung
+
+### Windows-Probleme
+
+1. Gerätemanager prüfen:
+```
+- Systemsteuerung -> Gerätemanager
+- Unter "Human Interface Devices" nach "Soundboard" suchen
+```
+
+2. USB-Verbindung testen:
+```
+- Anderer USB-Port
+- USB-Kabel prüfen
+- Zadig neu installieren
+```
 
 ### Audio-Probleme
 

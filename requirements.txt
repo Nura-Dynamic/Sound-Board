@@ -12,6 +12,7 @@ librosa>=0.8.0
 # GPIO und Hardware
 gpiozero>=1.6.2
 pyusb>=1.2.1
+hidapi>=0.11.0
 RPi.GPIO>=0.7.0
 
 # Utilities
