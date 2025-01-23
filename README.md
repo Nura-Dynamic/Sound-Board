@@ -101,11 +101,7 @@ Bearbeiten Sie die `config.json` für Windows-Befehle:
 
 ## Installation
 
-### Windows (für HID-Empfang)
-
-1. Zadig USB-Treiber installieren
-2. Soundboard am USB-Port anschließen
-3. Windows erkennt das Gerät als "HID-konformes Gerät"
+### Raspberry Pi
 
 ### 1. System-Pakete installieren
 
@@ -116,27 +112,29 @@ sudo apt-get upgrade
 
 # Benötigte System-Pakete
 sudo apt-get install -y \
+    python3-full \
     python3-pip \
     python3-venv \
-    python3-dev \
+    python3-pyqt5 \
+    python3-numpy \
+    python3-scipy \
+    python3-soundfile \
+    python3-librosa \
     portaudio19-dev \
     libsndfile1 \
+    libsndfile1-dev \
     libasound2-dev \
-    python3-pyqt5 \
     python3-usb \
     git
 ```
 
-### 2. Repository klonen
+### 2. Soundboard herunterladen
 
 ```bash
+# Repository klonen
 git clone https://github.com/Nura-Dynamic/Sound-Board.git
 cd Sound-Board
-```
 
-### 3. Python-Umgebung einrichten
-
-```bash
 # Virtuelle Umgebung erstellen
 python3 -m venv venv
 
@@ -144,137 +142,71 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Abhängigkeiten installieren
-pip install --upgrade pip
+python -m pip install --upgrade pip
+pip install -r requirements.txt --no-deps
+
+# Ausführbar machen
+chmod +x run.sh
+```
+
+### 3. Starten
+
+```bash
+./run.sh
+```
+
+Oder manuell:
+```bash
+source venv/bin/activate
+cd soundboard
+python main.py
+```
+
+### Windows-Client installieren
+
+1. Python für Windows installieren von [python.org](https://www.python.org/downloads/)
+2. Windows-Client herunterladen und entpacken
+3. Abhängigkeiten installieren:
+```cmd
+cd windows_client
 pip install -r requirements.txt
 ```
 
-### 4. Audio-Konfiguration
+4. Client starten:
+```cmd
+python soundboard_receiver.py
+```
 
+5. Als Windows-Dienst installieren (optional):
+```cmd
+python install_service.py
+```
+
+### Audio-Konfiguration
+
+1. USB-Soundkarte anschließen
+2. ALSA-Mixer öffnen:
 ```bash
-# ALSA-Konfiguration
-sudo nano /etc/asound.conf
+alsamixer
 ```
+3. Mit F6 USB-Soundkarte auswählen
+4. Lautstärke einstellen
 
-Fügen Sie folgende Zeilen ein:
-```
-pcm.!default {
-    type hw
-    card 1  # USB-Soundkarte oder HDMI
-}
+### GPIO-Konfiguration
 
-ctl.!default {
-    type hw
-    card 1
-}
-```
-
-### 5. Berechtigungen einrichten
-
-```bash
-# Audio-Gruppe
-sudo usermod -a -G audio $USER
-
-# GPIO-Gruppe
-sudo usermod -a -G gpio $USER
-
-# USB-Gruppe für HID
-sudo usermod -a -G plugdev $USER
-```
-
-## Konfiguration
-
-### Sound-Dateien
-
-1. Erstellen Sie einen `sounds` Ordner:
-```bash
-mkdir -p sounds
-```
-
-2. Kopieren Sie Ihre .wav oder .mp3 Dateien in den Ordner
-
-### Button-Konfiguration
-
-Bearbeiten Sie `config.json`:
-
+Pins in config.json anpassen:
 ```json
 {
-    "buttons": {
-        "0": {
-            "text": "Sound 1",
-            "action": "sound1.wav",
-            "type": "sound"
-        },
-        "1": {
-            "text": "Sound 2",
-            "action": "sound2.wav",
-            "type": "sound"
-        }
-    },
-    "audio_settings": {
-        "output_device": "default",
-        "volume": 1.0
-    }
+  "gpio_pins": {
+    "17": "button1",
+    "18": "button2",
+    "27": "button3",
+    "22": "button4"
+  }
 }
-```
-
-## Verwendung
-
-### Programm starten
-
-```bash
-cd Sound-Board
-source venv/bin/activate
-python3 soundboard/main.py
-```
-
-### Bedienung
-
-- **Sound-Buttons**: Tippen zum Abspielen
-- **Lautstärke-Regler**: 4 unabhängige Kanäle
-- **Effekt-Regler**:
-  - Auto: Autotune-Intensität
-  - Echo: Verzögerungszeit
-  - Rev: Reverb-Raumgröße
-  - Dist: Verzerrungsstärke
-
-### Tastenkürzel
-
-- `ESC`: Programm beenden
-- `1-9`: Direkte Button-Auswahl
-
-## Autostart einrichten
-
-```bash
-# Autostart-Verzeichnis erstellen
-mkdir -p ~/.config/autostart
-
-# Desktop-Eintrag erstellen
-cat > ~/.config/autostart/soundboard.desktop << EOL
-[Desktop Entry]
-Type=Application
-Name=Soundboard
-Exec=bash -c 'cd /home/pi/Sound-Board && source venv/bin/activate && python3 soundboard/main.py'
-Terminal=false
-X-GNOME-Autostart-enabled=true
-EOL
 ```
 
 ## Fehlerbehebung
-
-### Windows-Probleme
-
-1. Gerätemanager prüfen:
-```
-- Systemsteuerung -> Gerätemanager
-- Unter "Human Interface Devices" nach "Soundboard" suchen
-```
-
-2. USB-Verbindung testen:
-```
-- Anderer USB-Port
-- USB-Kabel prüfen
-- Zadig neu installieren
-```
 
 ### Audio-Probleme
 
@@ -303,6 +235,29 @@ echo $DISPLAY
 2. Qt-Plugins prüfen:
 ```bash
 QT_DEBUG_PLUGINS=1 python3 soundboard/main.py
+```
+
+### USB/HID-Probleme
+
+1. USB-Geräte prüfen:
+```bash
+lsusb
+```
+
+2. USB-Berechtigungen:
+```bash
+sudo usermod -a -G plugdev $USER
+```
+
+3. Udev-Regeln erstellen:
+```bash
+sudo nano /etc/udev/rules.d/99-soundboard.rules
+```
+```
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5750", MODE="0666"
+```
+```bash
+sudo udevadm control --reload-rules
 ```
 
 ## Lizenz
